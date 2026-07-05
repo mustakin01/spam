@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
+import urllib.parse
 import requests
 import json
 import time
@@ -83,6 +84,120 @@ def worker():
 
 # Start background worker thread
 threading.Thread(target=worker, daemon=True).start()
+
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Fire - Friend Request Sender</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .container { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border-radius: 20px; padding: 40px; width: 100%; max-width: 520px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+    h1 { color: #fff; text-align: center; font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: rgba(255,255,255,0.5); text-align: center; font-size: 13px; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 6px; font-weight: 500; }
+    input, select { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #fff; font-size: 15px; outline: none; transition: 0.2s; }
+    input:focus, select:focus { border-color: #6c63ff; box-shadow: 0 0 0 3px rgba(108,99,255,0.2); }
+    select option { background: #302b63; color: #fff; }
+    button { width: 100%; padding: 14px; background: linear-gradient(135deg, #6c63ff, #e040fb); border: none; border-radius: 10px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 8px; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(108,99,255,0.4); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .result { margin-top: 25px; padding: 20px; border-radius: 12px; display: none; }
+    .result.success { display: block; background: rgba(0,255,100,0.1); border: 1px solid rgba(0,255,100,0.2); }
+    .result.error { display: block; background: rgba(255,50,50,0.1); border: 1px solid rgba(255,50,50,0.2); }
+    .result .stat { display: flex; justify-content: space-between; padding: 8px 0; color: #fff; font-size: 14px; }
+    .result .stat:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .stat-label { color: rgba(255,255,255,0.6); }
+    .stat-value { font-weight: 600; }
+    .stat-value.green { color: #4caf50; }
+    .stat-value.red { color: #f44336; }
+    .stat-value.gold { color: #ffc107; }
+    .loading { text-align: center; color: rgba(255,255,255,0.6); display: none; margin-top: 20px; }
+    .loading.active { display: block; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #6c63ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 10px auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Friend Request Sender</h1>
+    <p class="subtitle">Free Fire - Send bulk friend requests</p>
+    <form id="requestForm">
+      <div class="form-group">
+        <label for="uid">Target UID</label>
+        <input type="text" id="uid" name="uid" placeholder="Enter Free Fire UID" required>
+      </div>
+      <div class="form-group">
+        <label for="region">Region</label>
+        <select id="region" name="region">
+          <option value="bd">Bangladesh (BD)</option>
+          <option value="ind">India (IND)</option>
+        </select>
+      </div>
+      <button type="submit" id="submitBtn">Send Requests</button>
+    </form>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Sending requests... please wait</p>
+    </div>
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+    const form = document.getElementById('requestForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loading = document.getElementById('loading');
+    const resultDiv = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const uid = document.getElementById('uid').value.trim();
+      const region = document.getElementById('region').value;
+
+      resultDiv.style.display = 'none';
+      resultDiv.className = 'result';
+      loading.classList.add('active');
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch(`/send_requests?uid=${encodeURIComponent(uid)}&region=${region}`);
+        const data = await res.json();
+
+        loading.classList.remove('active');
+        submitBtn.disabled = false;
+
+        if (data.error) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = `<div class="stat"><span class="stat-label">Error</span><span class="stat-value red">${data.error}</span></div>`;
+        } else {
+          resultDiv.className = 'result success';
+          resultDiv.innerHTML = `
+            <div class="stat"><span class="stat-label">Player Name</span><span class="stat-value gold">${data.player_name}</span></div>
+            <div class="stat"><span class="stat-label">UID</span><span class="stat-value">${data.uid}</span></div>
+            <div class="stat"><span class="stat-label">Region</span><span class="stat-value">${data.region.toUpperCase()}</span></div>
+            <div class="stat"><span class="stat-label">✅ Success</span><span class="stat-value green">${data.success}</span></div>
+            <div class="stat"><span class="stat-label">❌ Failed</span><span class="stat-value red">${data.failed}</span></div>
+            <div class="stat"><span class="stat-label">Status</span><span class="stat-value gold">${data.status === 1 ? 'Completed' : 'No requests sent'}</span></div>
+          `;
+        }
+      } catch (err) {
+        loading.classList.remove('active');
+        submitBtn.disabled = false;
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = `<div class="stat"><span class="stat-label">Error</span><span class="stat-value red">Failed to send request</span></div>`;
+      }
+    });
+  </script>
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET"])
+def dashboard():
+    return render_template_string(DASHBOARD_HTML)
 
 @app.route("/send_requests", methods=["GET"])
 def send_requests():
