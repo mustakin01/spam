@@ -91,7 +91,7 @@ DASHBOARD_HTML = """
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Free Fire - Friend Request Sender</title>
+  <title>Free Fire - Salman Friend Request Sender</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
@@ -124,7 +124,7 @@ DASHBOARD_HTML = """
 </head>
 <body>
   <div class="container">
-    <h1>🚀 Friend Request Sender</h1>
+    <h1>🚀 Salman Friend Request Sender</h1>
     <p class="subtitle">Free Fire - Send bulk friend requests</p>
     <form id="requestForm">
       <div class="form-group">
