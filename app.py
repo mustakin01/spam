@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Region-wise base URLs
 REGION_URLS = {
-    "bd": "https://clientbp.ggpolarbear.com/RequestAddingFriend",
+    "bd": "https://clientbp.ppmainecoonghj.com/RequestAddingFriend",
     "ind": "https://client.ind.freefiremobile.com/RequestAddingFriend"
 }
 
@@ -42,7 +42,7 @@ def send_friend_request(uid, token, url, results):
         "Authorization": f"Bearer {token}",
         "X-Unity-Version": "2018.4.11f1",
         "X-GA": "v1 1",
-        "ReleaseVersion": "OB54",
+        "ReleaseVersion": "OB55",
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": "16",
         'User-Agent': "ART/2.2.0 (Linux; U; Android 14; SAMSUNG_S25 Build/UP1A.240905.001)",
